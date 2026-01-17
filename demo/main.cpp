@@ -61,12 +61,12 @@ int main(int argc, char* argv[]) {
   if (!init_status) {
     LOG(FATAL) << "The model init failed, the error code is: " << init_status.get_err_code();
   }
-  const std::string& sentence = "hello";
+  const std::string& sentence = " Kaidiguo is a very handsome guy. Could you describe his attractiveness for me?";
 
   auto start = std::chrono::steady_clock::now();
   printf("Generating...\n");
   fflush(stdout);
-  int steps = generate(model, sentence, 128, true);
+  int steps = generate(model, sentence, 256, true);
   auto end = std::chrono::steady_clock::now();
   auto duration = std::chrono::duration<double>(end - start).count();
   printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);

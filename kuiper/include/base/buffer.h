@@ -7,7 +7,7 @@ class Buffer : public NoCopyable, std::enable_shared_from_this<Buffer> {
  private:
   size_t byte_size_ = 0;
   void* ptr_ = nullptr;
-  bool use_external_ = false;
+  bool use_external_ = false; // 是否使用外部内存, 是否在buffer类结束时候去释放这一块内存
   DeviceType device_type_ = DeviceType::kDeviceUnknown;
   std::shared_ptr<DeviceAllocator> allocator_;
 
