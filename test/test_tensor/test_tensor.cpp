@@ -142,3 +142,21 @@ TEST(test_tensor, assign1) {
   ASSERT_NE(t1_cpu.ptr<float>(), nullptr);
   delete[] ptr;
 }
+
+TEST(test_tensor, dims_stride) {
+  using namespace base;
+  auto alloc_cu = base::CPUDeviceAllocatorFactory::get_instance();
+
+  tensor::Tensor t1(base::DataType::kDataTypeFp32, 6, 320, 320, 3, true, alloc_cu);
+  ASSERT_EQ(t1.is_empty(), false);
+  ASSERT_EQ(t1.get_dim(0), 6);
+  ASSERT_EQ(t1.get_dim(1), 320);
+  ASSERT_EQ(t1.get_dim(2), 320);
+  ASSERT_EQ(t1.get_dim(3), 3);
+
+  const auto& strides = t1.strides();
+  ASSERT_EQ(strides.at(0), 320 * 320 * 3);
+  ASSERT_EQ(strides.at(1), 320 * 3);
+  ASSERT_EQ(strides.at(2), 3);
+  ASSERT_EQ(strides.at(3), 1);
+}
