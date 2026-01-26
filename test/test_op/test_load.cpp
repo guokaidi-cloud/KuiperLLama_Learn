@@ -1,3 +1,5 @@
+#include "../source/op/kernels/kernels_interface.h"
+#include "base/buffer.h"
 #include <cuda_runtime_api.h>
 #include <fcntl.h>
 #include <glog/logging.h>
@@ -5,15 +7,13 @@
 #include <model/config.h>
 #include <op/matmul.h>
 #include <sys/mman.h>
-#include "../source/op/kernels/kernels_interface.h"
-#include "base/buffer.h"
 
 TEST(test_load, load_model_config) {
   std::string model_path = "./tmp/test.bin";
   int32_t fd = open(model_path.data(), O_RDONLY);
   ASSERT_NE(fd, -1);
 
-  FILE* file = fopen(model_path.data(), "rb");
+  FILE *file = fopen(model_path.data(), "rb");
   ASSERT_NE(file, nullptr);
 
   auto config = model::ModelConfig{};
@@ -28,7 +28,7 @@ TEST(test_load, load_model_weight) {
   int32_t fd = open(model_path.data(), O_RDONLY);
   ASSERT_NE(fd, -1);
 
-  FILE* file = fopen(model_path.data(), "rb");
+  FILE *file = fopen(model_path.data(), "rb");
   ASSERT_NE(file, nullptr);
 
   auto config = model::ModelConfig{};
@@ -37,13 +37,18 @@ TEST(test_load, load_model_weight) {
   fseek(file, 0, SEEK_END);
   auto file_size = ftell(file);
 
-  void* data = mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
-  float* weight_data =
-      reinterpret_cast<float*>(static_cast<int8_t*>(data) + sizeof(model::ModelConfig));
+  void *data = mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
+  float *weight_data = reinterpret_cast<float *>(static_cast<int8_t *>(data) +
+                                                 sizeof(model::ModelConfig));
 
   for (int i = 0; i < config.dim * config.hidden_dim; ++i) {
     ASSERT_EQ(*(weight_data + i), float(i));
   }
+
+  auto wq = std::make_shared<op::MatmulLayer>(
+      base::DeviceType::kDeviceCPU, config.dim, config.hidden_dim, false);
+  wq->set_weight(0, {config.dim, config.hidden_dim}, weight_data,
+                 base::DeviceType::kDeviceCPU);
 }
 
 TEST(test_load, create_matmul) {
@@ -51,7 +56,7 @@ TEST(test_load, create_matmul) {
   int32_t fd = open(model_path.data(), O_RDONLY);
   ASSERT_NE(fd, -1);
 
-  FILE* file = fopen(model_path.data(), "rb");
+  FILE *file = fopen(model_path.data(), "rb");
   ASSERT_NE(file, nullptr);
 
   auto config = model::ModelConfig{};
@@ -60,9 +65,9 @@ TEST(test_load, create_matmul) {
   fseek(file, 0, SEEK_END);
   auto file_size = ftell(file);
 
-  void* data = mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
-  float* weight_data =
-      reinterpret_cast<float*>(static_cast<int8_t*>(data) + sizeof(model::ModelConfig));
+  void *data = mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
+  float *weight_data = reinterpret_cast<float *>(static_cast<int8_t *>(data) +
+                                                 sizeof(model::ModelConfig));
 
   for (int i = 0; i < config.dim * config.hidden_dim; ++i) {
     ASSERT_EQ(*(weight_data + i), float(i));
@@ -72,26 +77,29 @@ TEST(test_load, create_matmul) {
    *                                   1
    *                                   1
    */
-  auto wq = std::make_shared<op::MatmulLayer>(base::DeviceType::kDeviceCPU, config.dim,
-                                              config.hidden_dim, false);
-  float* in = new float[config.hidden_dim];
+  auto wq = std::make_shared<op::MatmulLayer>(
+      base::DeviceType::kDeviceCPU, config.dim, config.hidden_dim, false);
+  float *in = new float[config.hidden_dim];
   for (int i = 0; i < config.hidden_dim; ++i) {
-    in[i] = 1.f;
+    in[i] = 2.f;
   }
 
-  float* out = new float[config.dim];
+  float *out = new float[config.dim];
   for (int i = 0; i < config.dim; ++i) {
     out[i] = 0.f;
   }
-  tensor::Tensor tensor(base::DataType::kDataTypeFp32, config.hidden_dim, false, nullptr, in);
+  tensor::Tensor tensor(base::DataType::kDataTypeFp32, config.hidden_dim, false,
+                        nullptr, in);
   tensor.set_device_type(base::DeviceType::kDeviceCPU);
 
-  tensor::Tensor out_tensor(base::DataType::kDataTypeFp32, config.dim, false, nullptr, out);
+  tensor::Tensor out_tensor(base::DataType::kDataTypeFp32, config.dim, false,
+                            nullptr, out);
   out_tensor.set_device_type(base::DeviceType::kDeviceCPU);
 
   wq->set_input(0, tensor);
   wq->set_output(0, out_tensor);
-  wq->set_weight(0, {config.dim, config.hidden_dim}, weight_data, base::DeviceType::kDeviceCPU);
+  wq->set_weight(0, {config.dim, config.hidden_dim}, weight_data,
+                 base::DeviceType::kDeviceCPU);
   wq->forward(); // 完成一个计算
 
   /** python code:
@@ -99,10 +107,10 @@ TEST(test_load, create_matmul) {
    *  input = np.ones(128)
    *  out = w@input
    */
-  ASSERT_EQ(out[0], 8128);
-  ASSERT_EQ(out[1], 24512);
-  ASSERT_EQ(out[14], 237504);
-  ASSERT_EQ(out[15], 253888);
+  ASSERT_EQ(out[0], 8128 * 2);
+  ASSERT_EQ(out[1], 24512 * 2);
+  ASSERT_EQ(out[14], 237504 * 2);
+  ASSERT_EQ(out[15], 253888 * 2);
 
   delete[] in;
   delete[] out;
