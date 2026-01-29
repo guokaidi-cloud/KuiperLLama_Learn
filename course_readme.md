@@ -1,5 +1,5 @@
 # KuiperLLama 动手自制大模型推理框架，支持LLama2/3和Qwen2.5
-> News：新课发布，《动手自制大模型推理框架》，全手写cuda算子，课程框架支持LLama2和3.x以及Qwen2.5模型
+课程Kuiperllama，《动手自制大模型推理框架》，全手写cuda算子，课程框架支持LLama2和3.x以及Qwen2.5模型
 
 ## 《动手自制大模型推理框架》课程目录：
 https://tvle9mq8jh.feishu.cn/docx/AGb0dpqwfohQ9oxx4QycqbCjnJh
