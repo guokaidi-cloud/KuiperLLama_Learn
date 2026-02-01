@@ -147,12 +147,12 @@ base::Status Model::create_encode_layer() {
   if (tokenizer_type_ == TokenizerType::kEncodeSpe) {
     encode_layer_ = std::make_unique<op::SpeEncodeLayer>(this->token_path_, true, false);
   } else {
-#ifdef LLAMA3_SUPPORT
+#if defined(LLAMA3_SUPPORT)
     encode_layer_ = std::make_unique<op::BpeEncodeLayer>(this->token_path_, true, false);
-#endif
-
-#if defined(QWEN2_SUPPORT) || defined(QWEN3_SUPPORT)
+#elif defined(QWEN2_SUPPORT) || defined(QWEN3_SUPPORT)
     encode_layer_ = std::make_unique<op::QwenEncodeLayer>(this->token_path_, false, false);
+#else
+    return error::InternalError("BPE tokenizer requires LLAMA3_SUPPORT, QWEN2_SUPPORT, or QWEN3_SUPPORT to be enabled.");
 #endif
   }
   if (!encode_layer_) {
@@ -177,12 +177,48 @@ base::Status Model::gen_model_from_file() {
     LOG(ERROR) << "Create the encode layer failed!";
     return create_encode_status;
   }
+  
+  // 保存 tokenizer 的 vocab_size
+  int32_t tokenizer_vocab_size = config_->vocab_size_;
+  
   // mmap
   auto mmap_status = read_model_file();
   if (!mmap_status) {
     LOG(ERROR) << "Handle model file " << model_path_ << " failed!";
     return mmap_status;
   }
+  
+  // 检查模型文件和 tokenizer 的 vocab_size 是否匹配
+  int32_t model_vocab_size = config_->vocab_size_;
+  printf("[MODEL] Model file vocab_size: %d, Tokenizer vocab_size: %d\n", 
+         model_vocab_size, tokenizer_vocab_size);
+  fflush(stdout);
+  
+  if (model_vocab_size != tokenizer_vocab_size) {
+    printf("[ERROR] Vocabulary size mismatch detected!\n");
+    printf("[ERROR] Model file vocab_size: %d\n", model_vocab_size);
+    printf("[ERROR] Tokenizer vocab_size: %d\n", tokenizer_vocab_size);
+    printf("[ERROR] This will cause invalid token IDs to be generated!\n");
+    printf("[ERROR] Please ensure the model file and tokenizer are from the same model.\n");
+    fflush(stdout);
+    
+    LOG(ERROR) << "Vocabulary size mismatch: model file has " << model_vocab_size 
+               << ", but tokenizer has " << tokenizer_vocab_size 
+               << ". This will cause invalid token IDs to be generated!";
+    LOG(ERROR) << "Please ensure the model file and tokenizer are from the same model.";
+    // 对于 Llama3，vocab_size 必须匹配，否则会导致采样器选择无效 token
+    // 使用模型文件的 vocab_size（因为 cls_layer 的权重基于此）
+    // 但采样器可能会选择超出 tokenizer 范围的 token ID
+    LOG(WARNING) << "Using model file vocab_size (" << model_vocab_size 
+                 << ") for cls_layer and forward_output, but tokenizer only supports "
+                 << tokenizer_vocab_size << " tokens. Invalid token IDs may be generated.";
+  } else {
+    printf("[MODEL] Vocabulary sizes match: %d\n", model_vocab_size);
+    fflush(stdout);
+    // vocab_size 匹配，使用模型文件的 vocab_size（也是 tokenizer 的）
+    config_->vocab_size_ = model_vocab_size;
+  }
+  
   auto layer_create_status = create_layers();
   if (!layer_create_status) {
     LOG(ERROR) << "Create layers for the model file " << model_path_ << " failed!";

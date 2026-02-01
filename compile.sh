@@ -1,4 +1,4 @@
 mkdir build
 cd build 
-cmake ..
+cmake .. -DLLAMA3_SUPPORT=ON  
 make -j 32

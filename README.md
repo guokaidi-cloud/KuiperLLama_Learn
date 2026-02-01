@@ -11,6 +11,9 @@
 - **GoogleTest** - C++ 单元测试框架
 - **glog** - Google 日志库
 - **sentencepiece** - 文本分词库
+- **abseil-cpp** - Abseil C++ 通用库
+- **re2** - Google 正则表达式库
+- **nlohmann/json** - 现代 C++ JSON 库（header-only）
 
 #### 特性：
 - ✅ **智能权限管理**：自动检测是否为 root 用户，root 用户无需 sudo，普通用户自动添加 sudo
@@ -52,7 +55,7 @@ bash compile.sh
 
 ---
 
-### 3. test_demo.sh - 模型下载和测试脚本
+### 3. test_llama2_demo.sh - 模型下载和测试脚本
 
 自动下载模型文件并运行 demo 测试。
 
@@ -70,7 +73,7 @@ bash compile.sh
 
 #### 使用方法：
 ```bash
-bash test_demo.sh
+bash test_llama2_demo.sh
 ```
 
 #### 下载的文件：
@@ -81,7 +84,7 @@ bash test_demo.sh
 如果下载失败，脚本会自动尝试多个下载源。也可以手动启用 AutoDL 学术加速：
 ```bash
 source /etc/network_turbo
-bash test_demo.sh
+bash test_llama2_demo.sh
 ```
 
 ---
@@ -100,7 +103,7 @@ bash test_demo.sh
 
 3. **下载模型并测试**：
    ```bash
-   bash test_demo.sh
+   bash test_llama2_demo.sh
    ```
 
 ---

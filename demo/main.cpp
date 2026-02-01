@@ -15,6 +15,7 @@ int32_t generate(const model::LLama2Model& model, const std::string& sentence, i
   tensor::Tensor pos_tensor = model.get_buffer(model::ModelBufferType::kInputPos);
 
   std::vector<int32_t> words;
+  int32_t generated_count = 0;
   while (pos < total_steps) {
     pos_tensor.index<int32_t>(0) = pos;
     if (pos < prompt_len - 1) {
@@ -61,12 +62,13 @@ int main(int argc, char* argv[]) {
   if (!init_status) {
     LOG(FATAL) << "The model init failed, the error code is: " << init_status.get_err_code();
   }
-  const std::string& sentence = " Kaidiguo is a sunshine guy. Could you describe his attractiveness for me?";
+
+  const std::string& sentence = "hello";
 
   auto start = std::chrono::steady_clock::now();
   printf("Generating...\n");
   fflush(stdout);
-  int steps = generate(model, sentence, 256, true);
+  int steps = generate(model, sentence, 128, true);
   auto end = std::chrono::steady_clock::now();
   auto duration = std::chrono::duration<double>(end - start).count();
   printf("\nsteps/s:%lf\n", static_cast<double>(steps) / duration);

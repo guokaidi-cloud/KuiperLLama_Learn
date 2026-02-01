@@ -738,8 +738,16 @@ int32_t LLama2Model::post_processing(const tensor::Tensor& pos, bool is_prompt) 
   if (is_prompt) {
     next = -1;
   } else {
-    next = static_cast<int32_t>(sampler_->sample(forward_logits, forward_output.size(),
+    size_t logits_size = forward_output.size();
+    next = static_cast<int32_t>(sampler_->sample(forward_logits, logits_size,
                                                  cuda_config_ ? cuda_config_->stream : nullptr));
+    
+    // 验证采样器输出的 token ID 是否在有效范围内
+    if (next < 0 || next >= static_cast<int32_t>(config_->vocab_size_)) {
+      LOG(ERROR) << "Invalid token ID sampled: " << next 
+                 << " (vocab_size: " << config_->vocab_size_ 
+                 << ", logits_size: " << logits_size << ")";
+    }
   }
   return next;
 }
