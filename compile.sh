@@ -1,4 +1,4 @@
 mkdir build
 cd build 
 cmake ..
-make -32
+make -j 32

@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
   if (!init_status) {
     LOG(FATAL) << "The model init failed, the error code is: " << init_status.get_err_code();
   }
-  const std::string& sentence = " Kaidiguo is a very handsome guy. Could you describe his attractiveness for me?";
+  const std::string& sentence = " Kaidiguo is a sunshine guy. Could you describe his attractiveness for me?";
 
   auto start = std::chrono::steady_clock::now();
   printf("Generating...\n");
